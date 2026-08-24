@@ -1,0 +1,27 @@
+# Build artifacts
+build/
+bin/
+dist/
+
+# Compiled files
+*.exe
+*.o
+*.obj
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test/coverage artifacts
+coverage/
