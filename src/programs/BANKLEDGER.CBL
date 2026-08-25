@@ -10,7 +10,28 @@
                ASSIGN TO "data/input/accounts.dat"
                ORGANIZATION IS LINE SEQUENTIAL.
 
+           SELECT REJECTED-FILE
+               ASSIGN TO "data/output/rejected_transactions.dat"
+               ORGANIZATION IS LINE SEQUENTIAL.
+
+       
+
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+
+           SELECT ACCOUNT-FILE
+               ASSIGN TO "data/input/accounts.dat"
+               ORGANIZATION IS LINE SEQUENTIAL.
+
        DATA DIVISION.
+
+       FILE SECTION.
+
+       FD ACCOUNT-FILE.
+       01 ACCOUNT-INPUT-RECORD PIC X(100).
+
+       FD REJECTED-FILE.
+       01 REJECTED-RECORD       PIC X(150).
 
        FILE SECTION.
 
@@ -20,6 +41,15 @@
        WORKING-STORAGE SECTION.
 
        COPY TRXVAL.CPY.
+
+       01 WS-REJECTED-RECORD.
+           05 WS-REJ-TRANSACTION-ID  PIC 9(06).
+           05 FILLER                 PIC X(01) VALUE "|".
+           05 WS-REJ-ACCOUNT-ID      PIC X(06).
+           05 FILLER                 PIC X(01) VALUE "|".
+           05 WS-REJ-ERROR-CODE      PIC X(30).
+           05 FILLER                 PIC X(01) VALUE "|".
+           05 WS-REJ-AMOUNT          PIC 9(13)V99.
 
        01 WS-END-OF-FILE       PIC X VALUE "N".
           88 END-OF-FILE       VALUE "Y".
