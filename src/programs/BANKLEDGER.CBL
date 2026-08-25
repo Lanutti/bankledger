@@ -40,6 +40,8 @@
 
        WORKING-STORAGE SECTION.
 
+       01 WS-REJECTED-RECORD PIC X(150).
+
        COPY TRXVAL.CPY.
 
        01 WS-REJECTED-RECORD.
@@ -74,90 +76,89 @@
 
        MAIN-PROCEDURE.
            DISPLAY "========================================".
-           DISPLAY "             BANKLEDGER".
+           DISPLAY "             BANKLEDGER                 ".
            DISPLAY "========================================".
 
-           OPEN INPUT ACCOUNT-FILE.
+           OPEN INPUT TRANSACTION-FILE
+                OUTPUT REJECTED-FILE.
 
            PERFORM UNTIL END-OF-FILE
-               READ ACCOUNT-FILE
+               READ TRANSACTION-FILE
                    AT END
                        SET END-OF-FILE TO TRUE
                    NOT AT END
-                       ADD 1 TO WS-ACCOUNT-COUNT
+                       ADD 1 TO WS-TRANSACTION-COUNT
 
-                       INITIALIZE WS-ACCOUNT-INPUT
+                       PERFORM VALIDATE-TRANSACTION
 
-                       UNSTRING ACCOUNT-INPUT-RECORD
-                           DELIMITED BY "|"
-                           INTO
-                               WS-ACCOUNT-ID
-                               WS-CUSTOMER-ID
-                               WS-ACCOUNT-TYPE
-                               WS-ACCOUNT-BALANCE
-                               WS-ACCOUNT-STATUS
-                       END-UNSTRING
-
-                       PERFORM VALIDATE-ACCOUNT
+                       IF TRANSACTION-VALID
+                           PERFORM PROCESS-TRANSACTION
+                       ELSE
+                           PERFORM REJECT-TRANSACTION
+                       END-IF
                END-READ
            END-PERFORM.
 
-           CLOSE ACCOUNT-FILE.
+           CLOSE TRANSACTION-FILE
+                 REJECTED-FILE.
 
            DISPLAY "----------------------------------------".
-           DISPLAY "TOTAL RECORDS:   " WS-ACCOUNT-COUNT.
-           DISPLAY "VALID RECORDS:   " WS-VALID-RECORDS.
-           DISPLAY "INVALID RECORDS: " WS-INVALID-RECORDS.
+           DISPLAY "TOTAL TRANSACTIONS:    " WS-TRANSACTION-COUNT.
+           DISPLAY "VALID TRANSACTIONS:    " WS-VALID-RECORDS.
+           DISPLAY "REJECTED TRANSACTIONS: " WS-INVALID-RECORDS.
            DISPLAY "----------------------------------------".
 
            STOP RUN.
-
-       VALIDATE-ACCOUNT.
-           IF WS-ACCOUNT-ID IS NUMERIC
-              AND WS-CUSTOMER-ID IS NUMERIC
-              AND WS-ACCOUNT-BALANCE NOT = SPACES
-              AND WS-ACCOUNT-TYPE NOT = SPACES
-              AND WS-ACCOUNT-STATUS NOT = SPACES
-               ADD 1 TO WS-VALID-RECORDS
-           ELSE
-               ADD 1 TO WS-INVALID-RECORDS
-           END-IF.
 
        VALIDATE-TRANSACTION.
            SET TRANSACTION-INVALID TO TRUE
            MOVE SPACES TO WS-VALIDATION-ERROR
 
            IF WS-TRANSACTION-ID = ZERO
-               MOVE "INVALID_TRANSACTION_ID"
-                   TO WS-VALIDATION-ERROR
+               MOVE "INVALID_TRANSACTION_ID" TO WS-VALIDATION-ERROR
                EXIT PARAGRAPH
            END-IF
 
            IF WS-ACCOUNT-ID = ZERO
-               MOVE "INVALID_ACCOUNT_ID"
-                   TO WS-VALIDATION-ERROR
+               MOVE "INVALID_ACCOUNT_ID" TO WS-VALIDATION-ERROR
                EXIT PARAGRAPH
            END-IF
 
            IF WS-TRANSACTION-AMOUNT <= ZERO
-               MOVE "INVALID_AMOUNT"
-                   TO WS-VALIDATION-ERROR
+               MOVE "INVALID_AMOUNT" TO WS-VALIDATION-ERROR
                EXIT PARAGRAPH
            END-IF
 
            IF WS-TRANSACTION-TYPE NOT = "DEPOSIT"
               AND WS-TRANSACTION-TYPE NOT = "WITHDRAWAL"
               AND WS-TRANSACTION-TYPE NOT = "TRANSFER"
-               MOVE "INVALID_TRANSACTION_TYPE"
-                   TO WS-VALIDATION-ERROR
+               MOVE "INVALID_TRANSACTION_TYPE" TO WS-VALIDATION-ERROR
                EXIT PARAGRAPH
            END-IF
 
            SET TRANSACTION-VALID TO TRUE.
 
-       LOOKUP-ACCOUNT.
-           SET ACCOUNT-NOT-FOUND TO TRUE
-       
-           IF WS-ACCOUNT-ID = WS-SEARCH-ACCOUNT-ID
-               SET ACCOUNT-FOUND TO TRUE
-           END-IF.
+       PROCESS-TRANSACTION.
+           ADD 1 TO WS-VALID-RECORDS
+      *    Lógica para processar a transação válida (ex: debitar/creditar)
+           CONTINUE.
+
+       REJECT-TRANSACTION.
+           ADD 1 TO WS-INVALID-RECORDS
+           PERFORM WRITE-REJECTED-TRANSACTION.
+
+       WRITE-REJECTED-TRANSACTION.
+           STRING
+               WS-TRANSACTION-ID
+               "|"
+               WS-ACCOUNT-ID
+               "|"
+               WS-VALIDATION-ERROR
+               "|"
+               WS-TRANSACTION-AMOUNT
+               DELIMITED BY SIZE
+               INTO WS-REJECTED-RECORD
+           END-STRING.
+
+           WRITE REJECTED-RECORD
+               FROM WS-REJECTED-RECORD.
