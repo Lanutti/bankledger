@@ -4,3 +4,4 @@
            05 ACCOUNT-TYPE            PIC X(10).
            05 ACCOUNT-BALANCE         PIC S9(09)V99.
            05 ACCOUNT-STATUS          PIC X(10).
+           
