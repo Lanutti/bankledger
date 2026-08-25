@@ -19,6 +19,8 @@
 
        WORKING-STORAGE SECTION.
 
+       COPY TRXVAL.CPY.
+
        01 WS-END-OF-FILE       PIC X VALUE "N".
           88 END-OF-FILE       VALUE "Y".
 
@@ -91,9 +93,41 @@
                ADD 1 TO WS-INVALID-RECORDS
            END-IF.
 
+       VALIDATE-TRANSACTION.
+           SET TRANSACTION-INVALID TO TRUE
+           MOVE SPACES TO WS-VALIDATION-ERROR
+
+           IF WS-TRANSACTION-ID = ZERO
+               MOVE "INVALID_TRANSACTION_ID"
+                   TO WS-VALIDATION-ERROR
+               EXIT PARAGRAPH
+           END-IF
+
+           IF WS-ACCOUNT-ID = ZERO
+               MOVE "INVALID_ACCOUNT_ID"
+                   TO WS-VALIDATION-ERROR
+               EXIT PARAGRAPH
+           END-IF
+
+           IF WS-TRANSACTION-AMOUNT <= ZERO
+               MOVE "INVALID_AMOUNT"
+                   TO WS-VALIDATION-ERROR
+               EXIT PARAGRAPH
+           END-IF
+
+           IF WS-TRANSACTION-TYPE NOT = "DEPOSIT"
+              AND WS-TRANSACTION-TYPE NOT = "WITHDRAWAL"
+              AND WS-TRANSACTION-TYPE NOT = "TRANSFER"
+               MOVE "INVALID_TRANSACTION_TYPE"
+                   TO WS-VALIDATION-ERROR
+               EXIT PARAGRAPH
+           END-IF
+
+           SET TRANSACTION-VALID TO TRUE.
+
        LOOKUP-ACCOUNT.
            SET ACCOUNT-NOT-FOUND TO TRUE
-
+       
            IF WS-ACCOUNT-ID = WS-SEARCH-ACCOUNT-ID
                SET ACCOUNT-FOUND TO TRUE
            END-IF.
