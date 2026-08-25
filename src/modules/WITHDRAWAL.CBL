@@ -1,0 +1,30 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. WITHDRAWAL.
+
+       DATA DIVISION.
+
+       LINKAGE SECTION.
+
+       01 LK-BALANCE     PIC S9(09)V99.
+       01 LK-AMOUNT      PIC S9(09)V99.
+       01 LK-SUCCESS     PIC X.
+           88 WITHDRAWAL-SUCCESS VALUE "Y".
+           88 WITHDRAWAL-FAILED  VALUE "N".
+
+       PROCEDURE DIVISION USING
+           LK-BALANCE
+           LK-AMOUNT
+           LK-SUCCESS.
+
+           SET WITHDRAWAL-FAILED TO TRUE
+
+           IF LK-AMOUNT > ZERO
+               AND LK-BALANCE >= LK-AMOUNT
+
+               SUBTRACT LK-AMOUNT FROM LK-BALANCE
+               SET WITHDRAWAL-SUCCESS TO TRUE
+
+           END-IF
+
+           GOBACK.
+           

@@ -1,6 +1,0 @@
-01 WS-ACCOUNT-INPUT.
-           05 WS-ACCOUNT-ID       PIC X(06).
-           05 WS-CUSTOMER-ID      PIC X(05).
-           05 WS-ACCOUNT-TYPE     PIC X(10).
-           05 WS-ACCOUNT-BALANCE  PIC X(20).
-           05 WS-ACCOUNT-STATUS   PIC X(10).

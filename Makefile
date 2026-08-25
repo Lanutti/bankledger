@@ -1,16 +1,21 @@
 COBOL = cobc
+
 SOURCE = src/programs/BANKLEDGER.CBL
+
 BUILD_DIR = build
+
 BINARY = $(BUILD_DIR)/bankledger
+
+COPYBOOK_DIR = src/copybooks
 
 .PHONY: build run test clean
 
 build:
 	mkdir -p $(BUILD_DIR)
-	$(COBOL) -x -o $(BINARY) $(SOURCE)
+	$(COBOL) -I $(COPYBOOK_DIR) -x -o $(BINARY) $(SOURCE)
 
 run: build
-	./$(BINARY)
+	./$(BINARY).exe
 
 test:
 	@echo "Test suite not implemented yet."
