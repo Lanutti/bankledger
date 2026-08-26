@@ -17,8 +17,12 @@ build:
 run: build
 	./$(BINARY).exe
 
-test:
-	@echo "Test suite not implemented yet."
+test: build
+	@echo "Running BankLedger transaction tests..."
+	@mkdir -p build/test-data
+	@cp tests/input/transactions_test.dat data/input/transactions.dat
+	@./build/bankledger.exe
+	@echo "Transaction tests completed."
 
 clean:
 	rm -rf $(BUILD_DIR)
