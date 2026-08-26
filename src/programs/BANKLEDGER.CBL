@@ -289,11 +289,22 @@ IDENTIFICATION DIVISION.
            END-IF.
 
       * Valida se a conta existe na memória
-           MOVE ACCOUNT-ID TO WS-SEARCH-ACCOUNT-ID.
+           MOVE ACCOUNT-ID
+               TO WS-SEARCH-ACCOUNT-ID.
+
            PERFORM FIND-ACCOUNT.
 
            IF ACCOUNT-NOT-FOUND
-               MOVE "ACCOUNT_NOT_FOUND" TO WS-VALIDATION-ERROR
+               MOVE "ACCOUNT_NOT_FOUND"
+                   TO WS-VALIDATION-ERROR
+               EXIT PARAGRAPH
+           END-IF.
+
+      * Valida se a conta encontrada está ativa
+           IF WS-TABLE-ACCOUNT-STATUS(WS-FOUND-ACCOUNT-INDEX)
+               NOT = "ACTIVE"
+               MOVE "ACCOUNT_NOT_ACTIVE"
+                   TO WS-VALIDATION-ERROR
                EXIT PARAGRAPH
            END-IF.
 
