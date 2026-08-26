@@ -75,7 +75,16 @@ IDENTIFICATION DIVISION.
                10 WS-TABLE-ACCOUNT-STATUS  PIC X(10).
 
        01 WS-ACCOUNT-INDEX                 PIC 9(03) VALUE ZERO.
+       01 WS-ACCOUNTS-LOADED               PIC 9(03) VALUE ZERO.
        01 WS-ACCOUNT-EOF                   PIC X VALUE "N".
+
+       01 WS-SEARCH-ACCOUNT-ID             PIC 9(06).
+
+       01 WS-ACCOUNT-FOUND                 PIC X VALUE "N".
+          88 ACCOUNT-FOUND                 VALUE "Y".
+          88 ACCOUNT-NOT-FOUND             VALUE "N".
+
+       01 WS-FOUND-ACCOUNT-INDEX           PIC 9(03) VALUE ZERO.
 
        PROCEDURE DIVISION.
 
@@ -129,6 +138,7 @@ IDENTIFICATION DIVISION.
        LOAD-ACCOUNTS.
 
            MOVE ZERO TO WS-ACCOUNT-INDEX.
+           MOVE ZERO TO WS-ACCOUNTS-LOADED.
            MOVE "N" TO WS-ACCOUNT-EOF.
 
            PERFORM UNTIL WS-ACCOUNT-EOF = "Y" OR WS-ACCOUNT-INDEX >= 100
@@ -182,6 +192,32 @@ IDENTIFICATION DIVISION.
 
            MOVE WS-ACC-STAT-IN 
              TO WS-TABLE-ACCOUNT-STATUS(WS-ACCOUNT-INDEX).
+
+           ADD 1 TO WS-ACCOUNTS-LOADED.
+
+
+       FIND-ACCOUNT.
+
+           SET ACCOUNT-NOT-FOUND TO TRUE.
+           MOVE ZERO TO WS-FOUND-ACCOUNT-INDEX.
+
+           PERFORM VARYING WS-ACCOUNT-INDEX
+               FROM 1 BY 1
+               UNTIL WS-ACCOUNT-INDEX > WS-ACCOUNTS-LOADED
+
+               IF WS-TABLE-ACCOUNT-ID(WS-ACCOUNT-INDEX)
+                   = WS-SEARCH-ACCOUNT-ID
+
+                   SET ACCOUNT-FOUND TO TRUE
+
+                   MOVE WS-ACCOUNT-INDEX
+                       TO WS-FOUND-ACCOUNT-INDEX
+
+                   EXIT PERFORM
+
+               END-IF
+
+           END-PERFORM.
 
 
        PARSE-TRANSACTION.
@@ -249,6 +285,15 @@ IDENTIFICATION DIVISION.
               AND TRANSACTION-TYPE NOT = "WITHDRAWAL"
               AND TRANSACTION-TYPE NOT = "TRANSFER"
                MOVE "INVALID_TRANSACTION_TYPE" TO WS-VALIDATION-ERROR
+               EXIT PARAGRAPH
+           END-IF.
+
+      * Valida se a conta existe na memória
+           MOVE ACCOUNT-ID TO WS-SEARCH-ACCOUNT-ID.
+           PERFORM FIND-ACCOUNT.
+
+           IF ACCOUNT-NOT-FOUND
+               MOVE "ACCOUNT_NOT_FOUND" TO WS-VALIDATION-ERROR
                EXIT PARAGRAPH
            END-IF.
 
