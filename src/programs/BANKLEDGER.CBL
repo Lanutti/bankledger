@@ -1,4 +1,4 @@
-       IDENTIFICATION DIVISION.
+IDENTIFICATION DIVISION.
        PROGRAM-ID. BANKLEDGER.
 
        ENVIRONMENT DIVISION.
@@ -14,6 +14,10 @@
                ASSIGN TO "data/output/rejected_transactions.dat"
                ORGANIZATION IS LINE SEQUENTIAL.
 
+           SELECT ACCOUNT-FILE
+               ASSIGN TO "data/input/accounts.dat"
+               ORGANIZATION IS LINE SEQUENTIAL.
+
        DATA DIVISION.
 
        FILE SECTION.
@@ -24,11 +28,10 @@
        FD REJECTED-FILE.
        01 REJECTED-RECORD                  PIC X(150).
 
-       WORKING-STORAGE SECTION.
+       FD ACCOUNT-FILE.
+       01 ACCOUNT-INPUT-RECORD             PIC X(100).
 
-      * COPY ACCOUNT.
-      * COPY TRANSACT.
-      * COPY TRXVALID.
+       WORKING-STORAGE SECTION.
 
        01 WS-END-OF-FILE                   PIC X VALUE "N".
           88 END-OF-FILE                   VALUE "Y".
@@ -56,6 +59,24 @@
        01 WS-VALIDATION-ERROR              PIC X(30) VALUE SPACES.
        01 WS-REJECTED-RECORD               PIC X(150) VALUE SPACES.
 
+       01 WS-ACCOUNT-INPUT.
+           05 WS-ACC-ID-IN                 PIC X(06).
+           05 WS-CUST-ID-IN                PIC X(05).
+           05 WS-ACC-TYPE-IN               PIC X(10).
+           05 WS-ACC-BAL-IN                PIC X(20).
+           05 WS-ACC-STAT-IN               PIC X(10).
+
+       01 WS-ACCOUNT-TABLE.
+           05 WS-ACCOUNT-ENTRY OCCURS 100 TIMES.
+               10 WS-TABLE-ACCOUNT-ID      PIC 9(06).
+               10 WS-TABLE-CUSTOMER-ID     PIC 9(05).
+               10 WS-TABLE-ACCOUNT-TYPE    PIC X(10).
+               10 WS-TABLE-ACCOUNT-BALANCE PIC 9(11)V99.
+               10 WS-TABLE-ACCOUNT-STATUS  PIC X(10).
+
+       01 WS-ACCOUNT-INDEX                 PIC 9(03) VALUE ZERO.
+       01 WS-ACCOUNT-EOF                   PIC X VALUE "N".
+
        PROCEDURE DIVISION.
 
        MAIN-PROCEDURE.
@@ -64,6 +85,12 @@
            DISPLAY "             BANKLEDGER                 ".
            DISPLAY "========================================".
 
+      * 1. Carga inicial das Contas em Memória (Tabela)
+           OPEN INPUT ACCOUNT-FILE.
+           PERFORM LOAD-ACCOUNTS.
+           CLOSE ACCOUNT-FILE.
+
+      * 2. Processamento Principal de Transações
            OPEN INPUT TRANSACTION-FILE
                 OUTPUT REJECTED-FILE.
 
@@ -99,6 +126,64 @@
            STOP RUN.
 
 
+       LOAD-ACCOUNTS.
+
+           MOVE ZERO TO WS-ACCOUNT-INDEX.
+           MOVE "N" TO WS-ACCOUNT-EOF.
+
+           PERFORM UNTIL WS-ACCOUNT-EOF = "Y" OR WS-ACCOUNT-INDEX >= 100
+
+               READ ACCOUNT-FILE
+                   AT END
+                       MOVE "Y" TO WS-ACCOUNT-EOF
+                   NOT AT END
+                       ADD 1 TO WS-ACCOUNT-INDEX
+                       PERFORM PARSE-ACCOUNT
+                       PERFORM STORE-ACCOUNT
+               END-READ
+
+           END-PERFORM.
+
+
+       PARSE-ACCOUNT.
+
+           INITIALIZE WS-ACCOUNT-INPUT.
+
+           UNSTRING ACCOUNT-INPUT-RECORD
+               DELIMITED BY "|"
+               INTO
+                   WS-ACC-ID-IN
+                   WS-CUST-ID-IN
+                   WS-ACC-TYPE-IN
+                   WS-ACC-BAL-IN
+                   WS-ACC-STAT-IN
+           END-UNSTRING.
+
+
+       STORE-ACCOUNT.
+
+           IF WS-ACC-ID-IN NUMERIC
+               MOVE FUNCTION NUMVAL(WS-ACC-ID-IN) 
+                 TO WS-TABLE-ACCOUNT-ID(WS-ACCOUNT-INDEX)
+           END-IF.
+
+           IF WS-CUST-ID-IN NUMERIC
+               MOVE FUNCTION NUMVAL(WS-CUST-ID-IN) 
+                 TO WS-TABLE-CUSTOMER-ID(WS-ACCOUNT-INDEX)
+           END-IF.
+
+           MOVE WS-ACC-TYPE-IN 
+             TO WS-TABLE-ACCOUNT-TYPE(WS-ACCOUNT-INDEX).
+
+           IF WS-ACC-BAL-IN NUMERIC
+               MOVE FUNCTION NUMVAL(WS-ACC-BAL-IN) 
+                 TO WS-TABLE-ACCOUNT-BALANCE(WS-ACCOUNT-INDEX)
+           END-IF.
+
+           MOVE WS-ACC-STAT-IN 
+             TO WS-TABLE-ACCOUNT-STATUS(WS-ACCOUNT-INDEX).
+
+
        PARSE-TRANSACTION.
 
            INITIALIZE WS-TRANSACTION-INPUT.
@@ -118,7 +203,6 @@
            SET TRANSACTION-INVALID TO TRUE.
            MOVE SPACES TO WS-VALIDATION-ERROR.
 
-      * 1. Validação de formato alfanumérico/numérico
            IF WS-INPUT-TRANSACTION-ID NOT NUMERIC
                MOVE "INVALID_TRANSACTION_ID" TO WS-VALIDATION-ERROR
                EXIT PARAGRAPH
@@ -134,7 +218,6 @@
                EXIT PARAGRAPH
            END-IF.
 
-      * 2. Conversão segura para os campos numéricos/estruturados
            MOVE FUNCTION NUMVAL(WS-INPUT-TRANSACTION-ID)
                TO TRANSACTION-ID.
 
@@ -147,7 +230,6 @@
            MOVE FUNCTION NUMVAL(WS-INPUT-AMOUNT)
                TO TRANSACTION-AMOUNT.
 
-      * 3. Validação de regras de negócio
            IF TRANSACTION-ID = ZERO
                MOVE "INVALID_TRANSACTION_ID" TO WS-VALIDATION-ERROR
                EXIT PARAGRAPH
