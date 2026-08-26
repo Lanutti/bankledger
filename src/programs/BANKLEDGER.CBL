@@ -22,6 +22,10 @@
                ASSIGN TO "data/output/processed_transactions.dat"
                ORGANIZATION IS LINE SEQUENTIAL.
 
+           SELECT UPDATED-ACCOUNT-FILE
+               ASSIGN TO "data/output/accounts_updated.dat"
+               ORGANIZATION IS LINE SEQUENTIAL.
+
        DATA DIVISION.
 
        FILE SECTION.
@@ -37,6 +41,10 @@
 
        FD PROCESSED-FILE.
        01 PROCESSED-RECORD
+           PIC X(150).
+
+       FD UPDATED-ACCOUNT-FILE.
+       01 UPDATED-ACCOUNT-RECORD
            PIC X(150).
 
        WORKING-STORAGE SECTION.
@@ -103,6 +111,9 @@
        01 WS-PROCESSED-RECORD
            PIC X(150).
 
+       01 WS-UPDATED-ACCOUNT-RECORD
+           PIC X(150).
+
        PROCEDURE DIVISION.
 
        MAIN-PROCEDURE.
@@ -122,6 +133,7 @@
            OPEN INPUT TRANSACTION-FILE
                 OUTPUT PROCESSED-FILE
                 OUTPUT REJECTED-FILE.
+           OPEN OUTPUT UPDATED-ACCOUNT-FILE.
 
            PERFORM UNTIL END-OF-FILE
 
@@ -145,9 +157,13 @@
 
            END-PERFORM.
 
+           PERFORM WRITE-UPDATED-ACCOUNTS.
+
            CLOSE TRANSACTION-FILE
                  REJECTED-FILE
                  PROCESSED-FILE.
+
+           CLOSE UPDATED-ACCOUNT-FILE.
 
            DISPLAY "----------------------------------------".
            DISPLAY "TOTAL TRANSACTIONS:    "
@@ -505,3 +521,40 @@
 
            WRITE PROCESSED-RECORD
                FROM WS-PROCESSED-RECORD.
+
+       WRITE-UPDATED-ACCOUNTS.
+
+           PERFORM VARYING WS-ACCOUNT-INDEX
+               FROM 1 BY 1
+               UNTIL WS-ACCOUNT-INDEX > WS-ACCOUNTS-LOADED
+
+               MOVE SPACES
+                   TO WS-UPDATED-ACCOUNT-RECORD
+
+               STRING
+                   WS-TABLE-ACCOUNT-ID(
+                       WS-ACCOUNT-INDEX
+                   )
+                   "|"
+                   WS-TABLE-CUSTOMER-ID(
+                       WS-ACCOUNT-INDEX
+                   )
+                   "|"
+                   WS-TABLE-ACCOUNT-TYPE(
+                       WS-ACCOUNT-INDEX
+                   )
+                   "|"
+                   WS-TABLE-ACCOUNT-BALANCE(
+                       WS-ACCOUNT-INDEX
+                   )
+                   "|"
+                   WS-TABLE-ACCOUNT-STATUS(
+                       WS-ACCOUNT-INDEX
+                   )
+                   DELIMITED BY SIZE
+                   INTO WS-UPDATED-ACCOUNT-RECORD
+               END-STRING
+
+               WRITE UPDATED-ACCOUNT-RECORD
+
+           END-PERFORM.
