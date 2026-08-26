@@ -18,6 +18,10 @@
                ASSIGN TO "data/input/accounts.dat"
                ORGANIZATION IS LINE SEQUENTIAL.
 
+           SELECT PROCESSED-FILE
+               ASSIGN TO "data/output/processed_transactions.dat"
+               ORGANIZATION IS LINE SEQUENTIAL.
+
        DATA DIVISION.
 
        FILE SECTION.
@@ -30,6 +34,10 @@
 
        FD ACCOUNT-FILE.
        01 ACCOUNT-INPUT-RECORD             PIC X(100).
+
+       FD PROCESSED-FILE.
+       01 PROCESSED-RECORD
+           PIC X(150).
 
        WORKING-STORAGE SECTION.
 
@@ -92,6 +100,8 @@
        01 WS-TRANSFER-ACCOUNT-INDEX
            PIC 9(03).
 
+       01 WS-PROCESSED-RECORD
+           PIC X(150).
 
        PROCEDURE DIVISION.
 
@@ -110,6 +120,7 @@
 
       *    2. Processamento principal das transacoes
            OPEN INPUT TRANSACTION-FILE
+                OUTPUT PROCESSED-FILE
                 OUTPUT REJECTED-FILE.
 
            PERFORM UNTIL END-OF-FILE
@@ -135,7 +146,8 @@
            END-PERFORM.
 
            CLOSE TRANSACTION-FILE
-                 REJECTED-FILE.
+                 REJECTED-FILE
+                 PROCESSED-FILE.
 
            DISPLAY "----------------------------------------".
            DISPLAY "TOTAL TRANSACTIONS:    "
@@ -414,6 +426,7 @@
                ).
 
            ADD 1 TO WS-VALID-RECORDS.
+           PERFORM WRITE-PROCESSED-TRANSACTION.
 
 
        PROCESS-WITHDRAWAL.
@@ -437,6 +450,8 @@
                ).
 
            ADD 1 TO WS-VALID-RECORDS.
+
+           PERFORM WRITE-PROCESSED-TRANSACTION.
 
 
        PROCESS-TRANSFER.
@@ -471,3 +486,22 @@
 
            WRITE REJECTED-RECORD
                FROM WS-REJECTED-RECORD.
+
+       WRITE-PROCESSED-TRANSACTION.
+
+           INITIALIZE WS-PROCESSED-RECORD.
+
+           STRING
+               WS-INPUT-TRANSACTION-ID
+               "|"
+               WS-INPUT-ACCOUNT-ID
+               "|"
+               WS-INPUT-TYPE
+               "|"
+               WS-INPUT-AMOUNT
+               DELIMITED BY SIZE
+               INTO WS-PROCESSED-RECORD
+           END-STRING.
+
+           WRITE PROCESSED-RECORD
+               FROM WS-PROCESSED-RECORD.
