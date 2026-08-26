@@ -389,24 +389,15 @@
            EVALUATE TRANSACTION-TYPE
 
                WHEN "DEPOSIT"
-
                    PERFORM PROCESS-DEPOSIT
 
                WHEN "WITHDRAWAL"
-
                    PERFORM PROCESS-WITHDRAWAL
 
                WHEN "TRANSFER"
-
                    PERFORM PROCESS-TRANSFER
 
            END-EVALUATE.
-
-           ADD 1
-               TO WS-VALID-RECORDS.
-
-           DISPLAY "TRANSACTION VALID: "
-                   TRANSACTION-ID.
 
 
        PROCESS-DEPOSIT.
@@ -416,13 +407,30 @@
                    WS-FOUND-ACCOUNT-INDEX
                ).
 
-           DISPLAY "DEPOSIT PROCESSED: "
-                   TRANSACTION-ID.
+           ADD 1 TO WS-VALID-RECORDS.
 
 
        PROCESS-WITHDRAWAL.
 
-           CONTINUE.
+           IF WS-TABLE-ACCOUNT-BALANCE(
+               WS-FOUND-ACCOUNT-INDEX
+           ) < TRANSACTION-AMOUNT
+
+               MOVE "INSUFFICIENT_FUNDS"
+                   TO WS-VALIDATION-ERROR
+
+               PERFORM REJECT-TRANSACTION
+
+               EXIT PARAGRAPH
+
+           END-IF.
+
+           SUBTRACT TRANSACTION-AMOUNT
+               FROM WS-TABLE-ACCOUNT-BALANCE(
+                   WS-FOUND-ACCOUNT-INDEX
+               ).
+
+           ADD 1 TO WS-VALID-RECORDS.
 
 
        PROCESS-TRANSFER.
