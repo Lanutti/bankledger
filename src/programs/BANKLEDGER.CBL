@@ -1,4 +1,4 @@
-IDENTIFICATION DIVISION.
+       IDENTIFICATION DIVISION.
        PROGRAM-ID. BANKLEDGER.
 
        ENVIRONMENT DIVISION.
@@ -86,6 +86,7 @@ IDENTIFICATION DIVISION.
 
        01 WS-FOUND-ACCOUNT-INDEX           PIC 9(03) VALUE ZERO.
 
+
        PROCEDURE DIVISION.
 
        MAIN-PROCEDURE.
@@ -94,12 +95,14 @@ IDENTIFICATION DIVISION.
            DISPLAY "             BANKLEDGER                 ".
            DISPLAY "========================================".
 
-      * 1. Carga inicial das Contas em Memória (Tabela)
+      *    1. Carga inicial das contas em memoria
            OPEN INPUT ACCOUNT-FILE.
+
            PERFORM LOAD-ACCOUNTS.
+
            CLOSE ACCOUNT-FILE.
 
-      * 2. Processamento Principal de Transações
+      *    2. Processamento principal das transacoes
            OPEN INPUT TRANSACTION-FILE
                 OUTPUT REJECTED-FILE.
 
@@ -108,6 +111,7 @@ IDENTIFICATION DIVISION.
                READ TRANSACTION-FILE
                    AT END
                        SET END-OF-FILE TO TRUE
+
                    NOT AT END
                        ADD 1 TO WS-TRANSACTION-COUNT
 
@@ -119,6 +123,7 @@ IDENTIFICATION DIVISION.
                        ELSE
                            PERFORM REJECT-TRANSACTION
                        END-IF
+
                END-READ
 
            END-PERFORM.
@@ -127,9 +132,15 @@ IDENTIFICATION DIVISION.
                  REJECTED-FILE.
 
            DISPLAY "----------------------------------------".
-           DISPLAY "TOTAL TRANSACTIONS:    " WS-TRANSACTION-COUNT.
-           DISPLAY "VALID TRANSACTIONS:    " WS-VALID-RECORDS.
-           DISPLAY "REJECTED TRANSACTIONS: " WS-INVALID-RECORDS.
+           DISPLAY "TOTAL TRANSACTIONS:    "
+                   WS-TRANSACTION-COUNT.
+
+           DISPLAY "VALID TRANSACTIONS:    "
+                   WS-VALID-RECORDS.
+
+           DISPLAY "REJECTED TRANSACTIONS: "
+                   WS-INVALID-RECORDS.
+
            DISPLAY "----------------------------------------".
 
            STOP RUN.
@@ -141,15 +152,20 @@ IDENTIFICATION DIVISION.
            MOVE ZERO TO WS-ACCOUNTS-LOADED.
            MOVE "N" TO WS-ACCOUNT-EOF.
 
-           PERFORM UNTIL WS-ACCOUNT-EOF = "Y" OR WS-ACCOUNT-INDEX >= 100
+           PERFORM UNTIL WS-ACCOUNT-EOF = "Y"
+               OR WS-ACCOUNT-INDEX >= 100
 
                READ ACCOUNT-FILE
+
                    AT END
                        MOVE "Y" TO WS-ACCOUNT-EOF
+
                    NOT AT END
                        ADD 1 TO WS-ACCOUNT-INDEX
+
                        PERFORM PARSE-ACCOUNT
                        PERFORM STORE-ACCOUNT
+
                END-READ
 
            END-PERFORM.
@@ -173,25 +189,41 @@ IDENTIFICATION DIVISION.
        STORE-ACCOUNT.
 
            IF WS-ACC-ID-IN NUMERIC
-               MOVE FUNCTION NUMVAL(WS-ACC-ID-IN) 
-                 TO WS-TABLE-ACCOUNT-ID(WS-ACCOUNT-INDEX)
+
+               MOVE FUNCTION NUMVAL(WS-ACC-ID-IN)
+                 TO WS-TABLE-ACCOUNT-ID(
+                     WS-ACCOUNT-INDEX
+                 )
+
            END-IF.
 
            IF WS-CUST-ID-IN NUMERIC
-               MOVE FUNCTION NUMVAL(WS-CUST-ID-IN) 
-                 TO WS-TABLE-CUSTOMER-ID(WS-ACCOUNT-INDEX)
+
+               MOVE FUNCTION NUMVAL(WS-CUST-ID-IN)
+                 TO WS-TABLE-CUSTOMER-ID(
+                     WS-ACCOUNT-INDEX
+                 )
+
            END-IF.
 
-           MOVE WS-ACC-TYPE-IN 
-             TO WS-TABLE-ACCOUNT-TYPE(WS-ACCOUNT-INDEX).
+           MOVE WS-ACC-TYPE-IN
+             TO WS-TABLE-ACCOUNT-TYPE(
+                 WS-ACCOUNT-INDEX
+             ).
 
            IF WS-ACC-BAL-IN NUMERIC
-               MOVE FUNCTION NUMVAL(WS-ACC-BAL-IN) 
-                 TO WS-TABLE-ACCOUNT-BALANCE(WS-ACCOUNT-INDEX)
+
+               MOVE FUNCTION NUMVAL(WS-ACC-BAL-IN)
+                 TO WS-TABLE-ACCOUNT-BALANCE(
+                     WS-ACCOUNT-INDEX
+                 )
+
            END-IF.
 
-           MOVE WS-ACC-STAT-IN 
-             TO WS-TABLE-ACCOUNT-STATUS(WS-ACCOUNT-INDEX).
+           MOVE WS-ACC-STAT-IN
+             TO WS-TABLE-ACCOUNT-STATUS(
+                 WS-ACCOUNT-INDEX
+             ).
 
            ADD 1 TO WS-ACCOUNTS-LOADED.
 
@@ -199,19 +231,21 @@ IDENTIFICATION DIVISION.
        FIND-ACCOUNT.
 
            SET ACCOUNT-NOT-FOUND TO TRUE.
+
            MOVE ZERO TO WS-FOUND-ACCOUNT-INDEX.
 
            PERFORM VARYING WS-ACCOUNT-INDEX
                FROM 1 BY 1
                UNTIL WS-ACCOUNT-INDEX > WS-ACCOUNTS-LOADED
 
-               IF WS-TABLE-ACCOUNT-ID(WS-ACCOUNT-INDEX)
-                   = WS-SEARCH-ACCOUNT-ID
+               IF WS-TABLE-ACCOUNT-ID(
+                   WS-ACCOUNT-INDEX
+               ) = WS-SEARCH-ACCOUNT-ID
 
                    SET ACCOUNT-FOUND TO TRUE
 
                    MOVE WS-ACCOUNT-INDEX
-                       TO WS-FOUND-ACCOUNT-INDEX
+                     TO WS-FOUND-ACCOUNT-INDEX
 
                    EXIT PERFORM
 
@@ -237,75 +271,114 @@ IDENTIFICATION DIVISION.
        VALIDATE-TRANSACTION.
 
            SET TRANSACTION-INVALID TO TRUE.
+
            MOVE SPACES TO WS-VALIDATION-ERROR.
 
            IF WS-INPUT-TRANSACTION-ID NOT NUMERIC
-               MOVE "INVALID_TRANSACTION_ID" TO WS-VALIDATION-ERROR
+
+               MOVE "INVALID_TRANSACTION_ID"
+                 TO WS-VALIDATION-ERROR
+
                EXIT PARAGRAPH
+
            END-IF.
 
            IF WS-INPUT-ACCOUNT-ID NOT NUMERIC
-               MOVE "INVALID_ACCOUNT_ID" TO WS-VALIDATION-ERROR
+
+               MOVE "INVALID_ACCOUNT_ID"
+                 TO WS-VALIDATION-ERROR
+
                EXIT PARAGRAPH
+
            END-IF.
 
            IF WS-INPUT-AMOUNT NOT NUMERIC
-               MOVE "INVALID_AMOUNT" TO WS-VALIDATION-ERROR
+
+               MOVE "INVALID_AMOUNT"
+                 TO WS-VALIDATION-ERROR
+
                EXIT PARAGRAPH
+
            END-IF.
 
-           MOVE FUNCTION NUMVAL(WS-INPUT-TRANSACTION-ID)
-               TO TRANSACTION-ID.
+           MOVE FUNCTION NUMVAL(
+               WS-INPUT-TRANSACTION-ID
+           ) TO TRANSACTION-ID.
 
-           MOVE FUNCTION NUMVAL(WS-INPUT-ACCOUNT-ID)
-               TO ACCOUNT-ID.
+           MOVE FUNCTION NUMVAL(
+               WS-INPUT-ACCOUNT-ID
+           ) TO ACCOUNT-ID.
 
            MOVE WS-INPUT-TYPE
-               TO TRANSACTION-TYPE.
+             TO TRANSACTION-TYPE.
 
-           MOVE FUNCTION NUMVAL(WS-INPUT-AMOUNT)
-               TO TRANSACTION-AMOUNT.
+           MOVE FUNCTION NUMVAL(
+               WS-INPUT-AMOUNT
+           ) TO TRANSACTION-AMOUNT.
 
            IF TRANSACTION-ID = ZERO
-               MOVE "INVALID_TRANSACTION_ID" TO WS-VALIDATION-ERROR
+
+               MOVE "INVALID_TRANSACTION_ID"
+                 TO WS-VALIDATION-ERROR
+
                EXIT PARAGRAPH
+
            END-IF.
 
            IF ACCOUNT-ID = ZERO
-               MOVE "INVALID_ACCOUNT_ID" TO WS-VALIDATION-ERROR
+
+               MOVE "INVALID_ACCOUNT_ID"
+                 TO WS-VALIDATION-ERROR
+
                EXIT PARAGRAPH
+
            END-IF.
 
            IF TRANSACTION-AMOUNT <= ZERO
-               MOVE "INVALID_AMOUNT" TO WS-VALIDATION-ERROR
+
+               MOVE "INVALID_AMOUNT"
+                 TO WS-VALIDATION-ERROR
+
                EXIT PARAGRAPH
+
            END-IF.
 
            IF TRANSACTION-TYPE NOT = "DEPOSIT"
               AND TRANSACTION-TYPE NOT = "WITHDRAWAL"
               AND TRANSACTION-TYPE NOT = "TRANSFER"
-               MOVE "INVALID_TRANSACTION_TYPE" TO WS-VALIDATION-ERROR
+
+               MOVE "INVALID_TRANSACTION_TYPE"
+                 TO WS-VALIDATION-ERROR
+
                EXIT PARAGRAPH
+
            END-IF.
 
-      * Valida se a conta existe na memória
+      *    Valida se a conta existe na memoria
            MOVE ACCOUNT-ID
-               TO WS-SEARCH-ACCOUNT-ID.
+             TO WS-SEARCH-ACCOUNT-ID.
 
            PERFORM FIND-ACCOUNT.
 
            IF ACCOUNT-NOT-FOUND
+
                MOVE "ACCOUNT_NOT_FOUND"
-                   TO WS-VALIDATION-ERROR
+                 TO WS-VALIDATION-ERROR
+
                EXIT PARAGRAPH
+
            END-IF.
 
-      * Valida se a conta encontrada está ativa
-           IF WS-TABLE-ACCOUNT-STATUS(WS-FOUND-ACCOUNT-INDEX)
-               NOT = "ACTIVE"
+      *    Valida se a conta encontrada esta ativa
+           IF WS-TABLE-ACCOUNT-STATUS(
+               WS-FOUND-ACCOUNT-INDEX
+           ) NOT = "ACTIVE"
+
                MOVE "ACCOUNT_NOT_ACTIVE"
-                   TO WS-VALIDATION-ERROR
+                 TO WS-VALIDATION-ERROR
+
                EXIT PARAGRAPH
+
            END-IF.
 
            SET TRANSACTION-VALID TO TRUE.
@@ -313,13 +386,54 @@ IDENTIFICATION DIVISION.
 
        PROCESS-TRANSACTION.
 
-           ADD 1 TO WS-VALID-RECORDS.
-           DISPLAY "TRANSACTION VALID: " TRANSACTION-ID.
+           EVALUATE TRANSACTION-TYPE
+
+               WHEN "DEPOSIT"
+
+                   PERFORM PROCESS-DEPOSIT
+
+               WHEN "WITHDRAWAL"
+
+                   PERFORM PROCESS-WITHDRAWAL
+
+               WHEN "TRANSFER"
+
+                   PERFORM PROCESS-TRANSFER
+
+           END-EVALUATE.
+
+           ADD 1
+               TO WS-VALID-RECORDS.
+
+           DISPLAY "TRANSACTION VALID: "
+                   TRANSACTION-ID.
+
+
+       PROCESS-DEPOSIT.
+
+           ADD TRANSACTION-AMOUNT
+               TO WS-TABLE-ACCOUNT-BALANCE(
+                   WS-FOUND-ACCOUNT-INDEX
+               ).
+
+           DISPLAY "DEPOSIT PROCESSED: "
+                   TRANSACTION-ID.
+
+
+       PROCESS-WITHDRAWAL.
+
+           CONTINUE.
+
+
+       PROCESS-TRANSFER.
+
+           CONTINUE.
 
 
        REJECT-TRANSACTION.
 
            ADD 1 TO WS-INVALID-RECORDS.
+
            PERFORM WRITE-REJECTED-TRANSACTION.
 
 
@@ -330,12 +444,13 @@ IDENTIFICATION DIVISION.
            STRING
                WS-INPUT-TRANSACTION-ID DELIMITED BY SIZE
                "|"                      DELIMITED BY SIZE
-               WS-INPUT-ACCOUNT-ID     DELIMITED BY SIZE
+               WS-INPUT-ACCOUNT-ID      DELIMITED BY SIZE
                "|"                      DELIMITED BY SIZE
-               WS-VALIDATION-ERROR     DELIMITED BY SPACES
+               WS-VALIDATION-ERROR      DELIMITED BY SPACES
                "|"                      DELIMITED BY SIZE
-               WS-INPUT-AMOUNT         DELIMITED BY SPACES
+               WS-INPUT-AMOUNT          DELIMITED BY SPACES
                INTO WS-REJECTED-RECORD
            END-STRING.
 
-           WRITE REJECTED-RECORD FROM WS-REJECTED-RECORD.
+           WRITE REJECTED-RECORD
+               FROM WS-REJECTED-RECORD.
